@@ -25,16 +25,22 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
         }
     });
 
-    initialTriangleColor = new formattingSettings.ColorPicker({
-        name: "initialTriangleColor",
-        displayName: "Couleur date initiale",
+    plannedColor = new formattingSettings.ColorPicker({
+        name: "plannedColor",
+        displayName: "Couleur Planifié",
         value: { value: "#808080" }
     });
 
-    revisedTriangleColor = new formattingSettings.ColorPicker({
-        name: "revisedTriangleColor",
-        displayName: "Couleur date révisée",
+    inProgressColor = new formattingSettings.ColorPicker({
+        name: "inProgressColor",
+        displayName: "Couleur En cours",
         value: { value: "#FFA500" }
+    });
+
+    completedColor = new formattingSettings.ColorPicker({
+        name: "completedColor",
+        displayName: "Couleur Terminé",
+        value: { value: "#4CAF50" }
     });
 
     showConnectingLines = new formattingSettings.ToggleSwitch({
@@ -79,8 +85,9 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
     displayName: string = "Paramètres Milestones";
     slices: Array<FormattingSettingsSlice> = [
         this.triangleSize,
-        this.initialTriangleColor,
-        this.revisedTriangleColor,
+        this.plannedColor,
+        this.inProgressColor,
+        this.completedColor,
         this.showConnectingLines,
         this.quarterHeaderHeight,
         this.rowHeight

@@ -31,6 +31,11 @@
       "kind": "Grouping"
     },
     {
+      "displayName": "Statut",
+      "name": "status",
+      "kind": "Grouping"
+    },
+    {
       "displayName": "Catégorie",
       "name": "category",
       "kind": "Grouping"
@@ -73,6 +78,11 @@
             },
             {
               "for": {
+                "in": "status"
+              }
+            },
+            {
+              "for": {
                 "in": "category"
               }
             }
@@ -91,8 +101,8 @@
             "numeric": true
           }
         },
-        "initialTriangleColor": {
-          "displayName": "Couleur date initiale",
+        "plannedColor": {
+          "displayName": "Couleur Planifié",
           "type": {
             "fill": {
               "solid": {
@@ -101,8 +111,18 @@
             }
           }
         },
-        "revisedTriangleColor": {
-          "displayName": "Couleur date révisée",
+        "inProgressColor": {
+          "displayName": "Couleur En cours",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "completedColor": {
+          "displayName": "Couleur Terminé",
           "type": {
             "fill": {
               "solid": {

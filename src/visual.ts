@@ -15,6 +15,7 @@ export interface MilestoneDataPoint {
     milestoneName: string;
     initialDate: Date;
     revisedDate: Date | null;
+    status: string;
     category: string;
 }
 
@@ -82,18 +83,61 @@ export class Visual implements IVisual {
 
         const table = dataView.table;
         const rows = table.rows;
+        const columns = table.columns;
+
+        // Créer un mapping des rôles vers les indices de colonnes
+        const columnMapping: { [key: string]: number } = {};
+        columns.forEach((column, index) => {
+            if (column.roles) {
+                if (column.roles['projectId']) columnMapping['projectId'] = index;
+                if (column.roles['projectName']) columnMapping['projectName'] = index;
+                if (column.roles['projectInfo']) columnMapping['projectInfo'] = index;
+                if (column.roles['milestoneName']) columnMapping['milestoneName'] = index;
+                if (column.roles['initialDate']) columnMapping['initialDate'] = index;
+                if (column.roles['revisedDate']) columnMapping['revisedDate'] = index;
+                if (column.roles['status']) columnMapping['status'] = index;
+                if (column.roles['category']) columnMapping['category'] = index;
+            }
+        });
+
         const dataPoints: MilestoneDataPoint[] = [];
 
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
+
+            const projectId = columnMapping['projectId'] !== undefined ?
+                (row[columnMapping['projectId']] ? row[columnMapping['projectId']].toString() : "") : "";
+
+            const projectName = columnMapping['projectName'] !== undefined ?
+                (row[columnMapping['projectName']] ? row[columnMapping['projectName']].toString() : "") : "";
+
+            const projectInfo = columnMapping['projectInfo'] !== undefined ?
+                (row[columnMapping['projectInfo']] ? row[columnMapping['projectInfo']].toString() : "") : "";
+
+            const milestoneName = columnMapping['milestoneName'] !== undefined ?
+                (row[columnMapping['milestoneName']] ? row[columnMapping['milestoneName']].toString() : `Milestone ${i + 1}`) : `Milestone ${i + 1}`;
+
+            const initialDate = columnMapping['initialDate'] !== undefined && row[columnMapping['initialDate']] ?
+                new Date(row[columnMapping['initialDate']].toString()) : new Date();
+
+            const revisedDate = columnMapping['revisedDate'] !== undefined && row[columnMapping['revisedDate']] ?
+                new Date(row[columnMapping['revisedDate']].toString()) : null;
+
+            const status = columnMapping['status'] !== undefined ?
+                (row[columnMapping['status']] ? row[columnMapping['status']].toString() : "Planifié") : "Planifié";
+
+            const category = columnMapping['category'] !== undefined ?
+                (row[columnMapping['category']] ? row[columnMapping['category']].toString() : "Défaut") : "Défaut";
+
             dataPoints.push({
-                projectId: row[0] ? row[0].toString() : "",
-                projectName: row[1] ? row[1].toString() : "",
-                projectInfo: row[2] ? row[2].toString() : "",
-                milestoneName: row[3] ? row[3].toString() : `Milestone ${i + 1}`,
-                initialDate: row[4] ? new Date(row[4].toString()) : new Date(),
-                revisedDate: row[5] ? new Date(row[5].toString()) : null,
-                category: row[6] ? row[6].toString() : "Défaut"
+                projectId,
+                projectName,
+                projectInfo,
+                milestoneName,
+                initialDate,
+                revisedDate,
+                status,
+                category
             });
         }
 
@@ -138,6 +182,21 @@ export class Visual implements IVisual {
         }
     }
 
+    private getColorByStatus(status: string): string {
+        const statusLower = status.toLowerCase();
+
+        if (statusLower.includes("planif") || statusLower.includes("planned")) {
+            return this.formattingSettings.milestoneSettings.plannedColor.value.value;
+        } else if (statusLower.includes("cours") || statusLower.includes("progress")) {
+            return this.formattingSettings.milestoneSettings.inProgressColor.value.value;
+        } else if (statusLower.includes("termin") || statusLower.includes("complet") || statusLower.includes("done")) {
+            return this.formattingSettings.milestoneSettings.completedColor.value.value;
+        } else {
+            // Par défaut: planifié
+            return this.formattingSettings.milestoneSettings.plannedColor.value.value;
+        }
+    }
+
     private renderRoadmap(width: number, height: number): void {
         const margin = { top: 80, right: 40, bottom: 30, left: 250 };
         const innerWidth = width - margin.left - margin.right;
@@ -156,6 +215,7 @@ export class Visual implements IVisual {
             }
         });
 
+        // Utiliser les dates min/max des données
         const minDate = d3.min(allDates)!;
         const maxDate = d3.max(allDates)!;
 
@@ -336,18 +396,21 @@ export class Visual implements IVisual {
                     .attr("fill", idx % 2 === 0 ? "#fafafa" : "#fff")
                     .attr("stroke", "#eee");
 
-                // Triangle date initiale (gris)
+                // Déterminer la couleur basée sur le statut
+                const triangleColor = this.getColorByStatus(milestone.status);
+
+                // Triangle date initiale
                 const initialX = xScale(milestone.initialDate);
                 milestoneGroup.append("path")
                     .attr("class", "milestone-initial")
                     .attr("d", this.createTrianglePath(initialX, rowHeight / 2, triangleSize, 'up'))
-                    .attr("fill", this.formattingSettings.milestoneSettings.initialTriangleColor.value.value)
+                    .attr("fill", triangleColor)
                     .attr("stroke", "#555")
                     .attr("stroke-width", 1);
 
                 // Tooltip pour date initiale
                 milestoneGroup.append("title")
-                    .text(`${milestone.milestoneName}\nDate initiale: ${d3.timeFormat("%d %b %Y")(milestone.initialDate)}`);
+                    .text(`${milestone.milestoneName}\nStatut: ${milestone.status}\nDate initiale: ${d3.timeFormat("%d %b %Y")(milestone.initialDate)}`);
 
                 // Label date initiale
                 milestoneGroup.append("text")
@@ -358,14 +421,14 @@ export class Visual implements IVisual {
                     .attr("fill", "#666")
                     .text(d3.timeFormat("%b %Y")(milestone.initialDate));
 
-                // Triangle date révisée (orange) si existe
+                // Triangle date révisée si existe
                 if (milestone.revisedDate) {
                     const revisedX = xScale(milestone.revisedDate);
                     milestoneGroup.append("path")
                         .attr("class", "milestone-revised")
                         .attr("d", this.createTrianglePath(revisedX, rowHeight / 2, triangleSize, 'up'))
-                        .attr("fill", this.formattingSettings.milestoneSettings.revisedTriangleColor.value.value)
-                        .attr("stroke", "#d97700")
+                        .attr("fill", triangleColor)
+                        .attr("stroke", "#555")
                         .attr("stroke-width", 1);
 
                     // Label date révisée
