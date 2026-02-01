@@ -8,12 +8,21 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
 import DataView = powerbi.DataView;
 
-export interface RoadmapDataPoint {
-    task: string;
-    startDate: Date;
-    endDate: Date;
+export interface MilestoneDataPoint {
+    projectId: string;
+    projectName: string;
+    projectInfo: string;
+    milestoneName: string;
+    initialDate: Date;
+    revisedDate: Date | null;
     category: string;
-    progress: number;
+}
+
+export interface ProjectGroup {
+    projectId: string;
+    projectName: string;
+    projectInfo: string;
+    milestones: MilestoneDataPoint[];
 }
 
 export class Visual implements IVisual {
@@ -22,7 +31,7 @@ export class Visual implements IVisual {
     private container: d3.Selection<SVGGElement, any, any, any>;
     private formattingSettings: VisualFormattingSettingsModel;
     private formattingSettingsService: FormattingSettingsService;
-    private dataPoints: RoadmapDataPoint[];
+    private dataPoints: MilestoneDataPoint[];
 
     constructor(options: VisualConstructorOptions) {
         this.formattingSettingsService = new FormattingSettingsService();
@@ -63,7 +72,7 @@ export class Visual implements IVisual {
         this.renderRoadmap(width, height);
     }
 
-    private transformData(dataView: DataView): RoadmapDataPoint[] {
+    private transformData(dataView: DataView): MilestoneDataPoint[] {
         if (!dataView ||
             !dataView.table ||
             !dataView.table.rows ||
@@ -73,46 +82,91 @@ export class Visual implements IVisual {
 
         const table = dataView.table;
         const rows = table.rows;
-        const dataPoints: RoadmapDataPoint[] = [];
+        const dataPoints: MilestoneDataPoint[] = [];
 
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             dataPoints.push({
-                task: row[0] ? row[0].toString() : `Tâche ${i + 1}`,
-                startDate: row[1] ? new Date(row[1].toString()) : new Date(),
-                endDate: row[2] ? new Date(row[2].toString()) : new Date(),
-                category: row[3] ? row[3].toString() : "Défaut",
-                progress: row[4] ? Number(row[4]) : 0
+                projectId: row[0] ? row[0].toString() : "",
+                projectName: row[1] ? row[1].toString() : "",
+                projectInfo: row[2] ? row[2].toString() : "",
+                milestoneName: row[3] ? row[3].toString() : `Milestone ${i + 1}`,
+                initialDate: row[4] ? new Date(row[4].toString()) : new Date(),
+                revisedDate: row[5] ? new Date(row[5].toString()) : null,
+                category: row[6] ? row[6].toString() : "Défaut"
             });
         }
 
         return dataPoints;
     }
 
+    private groupMilestonesByProject(milestones: MilestoneDataPoint[]): ProjectGroup[] {
+        const projectMap = new Map<string, ProjectGroup>();
+
+        milestones.forEach(m => {
+            if (!projectMap.has(m.projectId)) {
+                projectMap.set(m.projectId, {
+                    projectId: m.projectId,
+                    projectName: m.projectName,
+                    projectInfo: m.projectInfo,
+                    milestones: []
+                });
+            }
+            projectMap.get(m.projectId)!.milestones.push(m);
+        });
+
+        // Trier les milestones de chaque projet par date initiale
+        projectMap.forEach(group => {
+            group.milestones.sort((a, b) =>
+                a.initialDate.getTime() - b.initialDate.getTime()
+            );
+        });
+
+        return Array.from(projectMap.values());
+    }
+
+    private createTrianglePath(centerX: number, centerY: number, size: number, direction: 'up' | 'down' = 'up'): string {
+        const height = size;
+        const width = size * 1.2;
+
+        if (direction === 'up') {
+            // Triangle pointant vers le haut: ▲
+            return `M ${centerX},${centerY - height/2} L ${centerX - width/2},${centerY + height/2} L ${centerX + width/2},${centerY + height/2} Z`;
+        } else {
+            // Triangle pointant vers le bas: ▼
+            return `M ${centerX},${centerY + height/2} L ${centerX - width/2},${centerY - height/2} L ${centerX + width/2},${centerY - height/2} Z`;
+        }
+    }
+
     private renderRoadmap(width: number, height: number): void {
-        const margin = { top: 50, right: 30, bottom: 50, left: 200 };
+        const margin = { top: 80, right: 40, bottom: 30, left: 250 };
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
 
-        const barHeight = this.formattingSettings.roadmapSettings.barHeight.value;
-        const showGrid = this.formattingSettings.roadmapSettings.showGrid.value;
+        const triangleSize = this.formattingSettings.milestoneSettings.triangleSize.value;
+        const quarterHeaderHeight = this.formattingSettings.milestoneSettings.quarterHeaderHeight.value;
+        const rowHeight = this.formattingSettings.milestoneSettings.rowHeight.value;
 
-        // Créer les échelles
-        const minDate = d3.min(this.dataPoints, d => d.startDate);
-        const maxDate = d3.max(this.dataPoints, d => d.endDate);
+        // Collecter toutes les dates (initiales + révisées)
+        const allDates: Date[] = [];
+        this.dataPoints.forEach(m => {
+            allDates.push(m.initialDate);
+            if (m.revisedDate) {
+                allDates.push(m.revisedDate);
+            }
+        });
 
+        const minDate = d3.min(allDates)!;
+        const maxDate = d3.max(allDates)!;
+
+        // Arrondir aux limites de mois
+        const startDate = d3.timeMonth.floor(minDate);
+        const endDate = d3.timeMonth.ceil(maxDate);
+
+        // Échelle temporelle
         const xScale = d3.scaleTime()
-            .domain([minDate, maxDate])
+            .domain([startDate, endDate])
             .range([0, innerWidth]);
-
-        const yScale = d3.scaleBand()
-            .domain(this.dataPoints.map(d => d.task))
-            .range([0, innerHeight])
-            .padding(0.2);
-
-        // Couleurs par catégorie
-        const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
-            .domain([...new Set(this.dataPoints.map(d => d.category))]);
 
         // Nettoyer le conteneur
         this.container.selectAll("*").remove();
@@ -120,111 +174,294 @@ export class Visual implements IVisual {
         // Positionner le conteneur
         this.container.attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-        // Ajouter la grille si activée
-        if (showGrid) {
-            this.container.append("g")
-                .attr("class", "grid")
-                .selectAll("line")
-                .data(xScale.ticks())
-                .enter()
-                .append("line")
-                .attr("x1", d => xScale(d))
-                .attr("x2", d => xScale(d))
-                .attr("y1", 0)
-                .attr("y2", innerHeight)
-                .attr("stroke", "#e0e0e0")
-                .attr("stroke-dasharray", "2,2");
+        // Grouper les milestones par projet
+        const projectGroups = this.groupMilestonesByProject(this.dataPoints);
+
+        // Rendu des en-têtes trimestres
+        this.renderQuarterHeaders(this.container, xScale, quarterHeaderHeight, innerWidth, innerHeight);
+
+        // Rendu des milestones
+        this.renderMilestones(this.container, projectGroups, xScale, rowHeight, triangleSize, innerWidth);
+
+        // Rendu des lignes de connexion
+        this.renderConnectingLines(this.container, projectGroups, xScale, rowHeight);
+    }
+
+    private renderQuarterHeaders(
+        container: d3.Selection<SVGGElement, any, any, any>,
+        xScale: d3.ScaleTime<number, number>,
+        headerHeight: number,
+        innerWidth: number,
+        innerHeight: number
+    ): void {
+        const [startDate, endDate] = xScale.domain();
+
+        // Générer les trimestres
+        interface Quarter {
+            year: number;
+            quarter: number;
+            startDate: Date;
+            endDate: Date;
         }
 
-        // Dessiner les barres de tâches
-        const tasks = this.container.append("g")
-            .attr("class", "tasks")
-            .selectAll("g")
-            .data(this.dataPoints)
-            .enter()
-            .append("g")
-            .attr("class", "task");
+        const quarters: Quarter[] = [];
+        let current = new Date(startDate);
 
-        // Barre de fond (durée totale)
-        tasks.append("rect")
-            .attr("class", "task-background")
-            .attr("x", d => xScale(d.startDate))
-            .attr("y", d => yScale(d.task))
-            .attr("width", d => xScale(d.endDate) - xScale(d.startDate))
-            .attr("height", yScale.bandwidth())
-            .attr("fill", d => colorScale(d.category))
-            .attr("opacity", 0.3)
-            .attr("rx", 3);
+        while (current <= endDate) {
+            const year = current.getFullYear();
+            const quarter = Math.floor(current.getMonth() / 3) + 1;
+            const qStart = new Date(year, (quarter - 1) * 3, 1);
+            const qEnd = new Date(year, quarter * 3, 0);
 
-        // Barre de progression
-        tasks.append("rect")
-            .attr("class", "task-progress")
-            .attr("x", d => xScale(d.startDate))
-            .attr("y", d => yScale(d.task))
-            .attr("width", d => (xScale(d.endDate) - xScale(d.startDate)) * (d.progress / 100))
-            .attr("height", yScale.bandwidth())
-            .attr("fill", d => colorScale(d.category))
-            .attr("rx", 3);
+            quarters.push({ year, quarter, startDate: qStart, endDate: qEnd });
+            current = new Date(year, quarter * 3, 1); // Prochain trimestre
+        }
 
-        // Ajouter un titre (tooltip natif SVG) pour chaque tâche
-        tasks.append("title")
-            .text(d => {
-                const startStr = d.startDate.toLocaleDateString('fr-FR');
-                const endStr = d.endDate.toLocaleDateString('fr-FR');
-                const duration = Math.ceil((d.endDate.getTime() - d.startDate.getTime()) / (1000 * 60 * 60 * 24));
-                return `${d.task}\n` +
-                       `Catégorie: ${d.category}\n` +
-                       `Début: ${startStr}\n` +
-                       `Fin: ${endStr}\n` +
-                       `Durée: ${duration} jours\n` +
-                       `Progression: ${d.progress}%`;
+        // Créer le groupe d'en-têtes
+        const headerGroup = container.append("g")
+            .attr("class", "quarter-headers")
+            .attr("transform", `translate(0, ${-headerHeight - 10})`);
+
+        // En-têtes des années (ligne du haut)
+        const yearGroup = headerGroup.append("g").attr("class", "year-headers");
+        const years = [...new Set(quarters.map(q => q.year))];
+
+        years.forEach(year => {
+            const yearQuarters = quarters.filter(q => q.year === year);
+            const x1 = xScale(yearQuarters[0].startDate);
+            const x2 = xScale(yearQuarters[yearQuarters.length - 1].endDate);
+
+            yearGroup.append("rect")
+                .attr("x", x1)
+                .attr("y", 0)
+                .attr("width", x2 - x1)
+                .attr("height", headerHeight / 2)
+                .attr("fill", "#f5f5f5")
+                .attr("stroke", "#ccc");
+
+            yearGroup.append("text")
+                .attr("x", (x1 + x2) / 2)
+                .attr("y", headerHeight / 4)
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "middle")
+                .attr("font-size", "14px")
+                .attr("font-weight", "bold")
+                .text(year);
+        });
+
+        // En-têtes des trimestres (ligne du bas)
+        const quarterGroup = headerGroup.append("g")
+            .attr("class", "quarter-rows")
+            .attr("transform", `translate(0, ${headerHeight / 2})`);
+
+        quarters.forEach(q => {
+            const x1 = xScale(q.startDate);
+            const x2 = xScale(q.endDate);
+
+            quarterGroup.append("rect")
+                .attr("x", x1)
+                .attr("y", 0)
+                .attr("width", x2 - x1)
+                .attr("height", headerHeight / 2)
+                .attr("fill", "#fafafa")
+                .attr("stroke", "#ccc");
+
+            quarterGroup.append("text")
+                .attr("x", (x1 + x2) / 2)
+                .attr("y", headerHeight / 4)
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "middle")
+                .attr("font-size", "12px")
+                .text(`Q${q.quarter}`);
+        });
+
+        // Lignes verticales de séparation
+        quarters.forEach(q => {
+            container.append("line")
+                .attr("class", "quarter-separator")
+                .attr("x1", xScale(q.startDate))
+                .attr("x2", xScale(q.startDate))
+                .attr("y1", -headerHeight - 10)
+                .attr("y2", innerHeight)
+                .attr("stroke", "#ddd")
+                .attr("stroke-width", 1);
+        });
+    }
+
+    private renderMilestones(
+        container: d3.Selection<SVGGElement, any, any, any>,
+        projectGroups: ProjectGroup[],
+        xScale: d3.ScaleTime<number, number>,
+        rowHeight: number,
+        triangleSize: number,
+        innerWidth: number
+    ): void {
+        let currentY = 0;
+
+        projectGroups.forEach(project => {
+            // Groupe pour le projet
+            const projectGroup = container.append("g")
+                .attr("class", "project-group")
+                .attr("transform", `translate(0, ${currentY})`);
+
+            // Labels du projet (colonne de gauche)
+            projectGroup.append("text")
+                .attr("x", -220)
+                .attr("y", rowHeight / 2)
+                .attr("font-size", "11px")
+                .attr("font-weight", "bold")
+                .text(`${project.projectId} - ${project.projectName}`);
+
+            projectGroup.append("text")
+                .attr("x", -220)
+                .attr("y", rowHeight / 2 + 14)
+                .attr("font-size", "9px")
+                .attr("fill", "#666")
+                .text(project.projectInfo);
+
+            // Rendu de chaque milestone du projet
+            project.milestones.forEach((milestone, idx) => {
+                const milestoneY = currentY + idx * rowHeight;
+
+                const milestoneGroup = container.append("g")
+                    .attr("class", "milestone")
+                    .attr("transform", `translate(0, ${milestoneY})`);
+
+                // Rectangle de fond
+                milestoneGroup.append("rect")
+                    .attr("x", -250)
+                    .attr("y", 0)
+                    .attr("width", innerWidth + 250)
+                    .attr("height", rowHeight)
+                    .attr("fill", idx % 2 === 0 ? "#fafafa" : "#fff")
+                    .attr("stroke", "#eee");
+
+                // Triangle date initiale (gris)
+                const initialX = xScale(milestone.initialDate);
+                milestoneGroup.append("path")
+                    .attr("class", "milestone-initial")
+                    .attr("d", this.createTrianglePath(initialX, rowHeight / 2, triangleSize, 'up'))
+                    .attr("fill", this.formattingSettings.milestoneSettings.initialTriangleColor.value.value)
+                    .attr("stroke", "#555")
+                    .attr("stroke-width", 1);
+
+                // Tooltip pour date initiale
+                milestoneGroup.append("title")
+                    .text(`${milestone.milestoneName}\nDate initiale: ${d3.timeFormat("%d %b %Y")(milestone.initialDate)}`);
+
+                // Label date initiale
+                milestoneGroup.append("text")
+                    .attr("x", initialX)
+                    .attr("y", rowHeight / 2 - triangleSize / 2 - 4)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "9px")
+                    .attr("fill", "#666")
+                    .text(d3.timeFormat("%b %Y")(milestone.initialDate));
+
+                // Triangle date révisée (orange) si existe
+                if (milestone.revisedDate) {
+                    const revisedX = xScale(milestone.revisedDate);
+                    milestoneGroup.append("path")
+                        .attr("class", "milestone-revised")
+                        .attr("d", this.createTrianglePath(revisedX, rowHeight / 2, triangleSize, 'up'))
+                        .attr("fill", this.formattingSettings.milestoneSettings.revisedTriangleColor.value.value)
+                        .attr("stroke", "#d97700")
+                        .attr("stroke-width", 1);
+
+                    // Label date révisée
+                    milestoneGroup.append("text")
+                        .attr("x", revisedX)
+                        .attr("y", rowHeight / 2 + triangleSize / 2 + 12)
+                        .attr("text-anchor", "middle")
+                        .attr("font-size", "9px")
+                        .attr("fill", "#666")
+                        .text(d3.timeFormat("%b %Y")(milestone.revisedDate));
+                }
+
+                // Nom du milestone (aligné à droite avant la timeline)
+                milestoneGroup.append("text")
+                    .attr("x", -10)
+                    .attr("y", rowHeight / 2)
+                    .attr("text-anchor", "end")
+                    .attr("dominant-baseline", "middle")
+                    .attr("font-size", "10px")
+                    .text(milestone.milestoneName);
             });
 
-        // Texte des tâches
-        tasks.append("text")
-            .attr("x", -10)
-            .attr("y", d => yScale(d.task) + yScale.bandwidth() / 2)
-            .attr("dy", "0.35em")
-            .attr("text-anchor", "end")
-            .attr("fill", "#333")
-            .attr("font-size", "12px")
-            .text(d => d.task);
+            currentY += project.milestones.length * rowHeight;
+        });
+    }
 
-        // Axe des dates
-        const xAxis = d3.axisBottom(xScale)
-            .ticks(6)
-            .tickFormat(d3.timeFormat("%b %Y"));
+    private renderConnectingLines(
+        container: d3.Selection<SVGGElement, any, any, any>,
+        projectGroups: ProjectGroup[],
+        xScale: d3.ScaleTime<number, number>,
+        rowHeight: number
+    ): void {
+        if (!this.formattingSettings.milestoneSettings.showConnectingLines.value) {
+            return;
+        }
 
-        this.container.append("g")
-            .attr("class", "x-axis")
-            .attr("transform", `translate(0, ${innerHeight})`)
-            .call(xAxis)
-            .selectAll("text")
-            .attr("font-size", "10px");
+        // Définir le marker de flèche
+        const defs = container.append("defs");
+        defs.append("marker")
+            .attr("id", "arrow")
+            .attr("markerWidth", 10)
+            .attr("markerHeight", 10)
+            .attr("refX", 8)
+            .attr("refY", 3)
+            .attr("orient", "auto")
+            .attr("markerUnits", "strokeWidth")
+            .append("path")
+            .attr("d", "M0,0 L0,6 L9,3 z")
+            .attr("fill", "#999");
 
-        // Légende (catégories)
-        const categories = [...new Set(this.dataPoints.map(d => d.category))];
-        const legend = this.container.append("g")
-            .attr("class", "legend")
-            .attr("transform", `translate(${innerWidth - 100}, -30)`);
+        const linesGroup = container.append("g").attr("class", "connecting-lines");
 
-        legend.selectAll("rect")
-            .data(categories)
-            .enter()
-            .append("rect")
-            .attr("x", (d, i) => i * 100)
-            .attr("width", 15)
-            .attr("height", 15)
-            .attr("fill", d => colorScale(d));
+        let currentY = 0;
 
-        legend.selectAll("text")
-            .data(categories)
-            .enter()
-            .append("text")
-            .attr("x", (d, i) => i * 100 + 20)
-            .attr("y", 12)
-            .attr("font-size", "10px")
-            .text(d => d);
+        projectGroups.forEach(project => {
+            // Trier les milestones par date effective (révisée si existe, sinon initiale)
+            const sortedMilestones = [...project.milestones].sort((a, b) => {
+                const dateA = a.revisedDate || a.initialDate;
+                const dateB = b.revisedDate || b.revisedDate;
+                return dateA.getTime() - dateB.getTime();
+            });
+
+            // Tracer les lignes entre milestones consécutifs
+            for (let i = 0; i < sortedMilestones.length - 1; i++) {
+                const current = sortedMilestones[i];
+                const next = sortedMilestones[i + 1];
+
+                // Utiliser date révisée si disponible, sinon initiale
+                const currentDate = current.revisedDate || current.initialDate;
+                const nextDate = next.revisedDate || next.initialDate;
+
+                // Trouver l'index dans le tableau original pour calculer le Y
+                const currentIdx = project.milestones.indexOf(current);
+                const nextIdx = project.milestones.indexOf(next);
+
+                const x1 = xScale(currentDate);
+                const y1 = currentY + currentIdx * rowHeight + rowHeight / 2;
+                const x2 = xScale(nextDate);
+                const y2 = currentY + nextIdx * rowHeight + rowHeight / 2;
+
+                // Créer un chemin courbe
+                const midX = (x1 + x2) / 2;
+                const controlY = Math.min(y1, y2) - 20;
+                const pathData = `M ${x1},${y1} Q ${midX},${controlY} ${x2},${y2}`;
+
+                linesGroup.append("path")
+                    .attr("d", pathData)
+                    .attr("fill", "none")
+                    .attr("stroke", "#999")
+                    .attr("stroke-width", 1.5)
+                    .attr("stroke-dasharray", "4,3")
+                    .attr("marker-end", "url(#arrow)");
+            }
+
+            currentY += project.milestones.length * rowHeight;
+        });
     }
 
     private renderEmptyState(width: number, height: number): void {

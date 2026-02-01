@@ -5,69 +5,85 @@
 }
 
 .roadmap-container {
-    .task {
-        cursor: pointer;
-        transition: all 0.2s ease;
-
-        &:hover {
-            .task-background {
-                opacity: 0.6;
-                stroke: #333;
-                stroke-width: 1px;
-            }
-
-            .task-progress {
-                filter: brightness(1.1);
-                stroke: #000;
+    .quarter-headers {
+        .year-headers {
+            rect {
+                fill: #f5f5f5;
+                stroke: #ccc;
                 stroke-width: 1px;
             }
 
             text {
+                fill: #333;
                 font-weight: bold;
-                fill: #000;
+            }
+        }
+
+        .quarter-rows {
+            rect {
+                fill: #fafafa;
+                stroke: #ccc;
+                stroke-width: 1px;
+            }
+
+            text {
+                fill: #555;
             }
         }
     }
 
-    .task-background {
-        transition: all 0.2s ease;
+    .quarter-separator {
+        stroke: #ddd;
+        stroke-width: 1px;
     }
 
-    .task-progress {
-        transition: all 0.3s ease-in-out;
-        filter: brightness(1);
+    .project-group {
+        text {
+            fill: #222;
+        }
     }
 
-    .x-axis {
-        line {
-            stroke: #ccc;
+    .milestone {
+        transition: opacity 0.2s ease;
+
+        &:hover {
+            rect {
+                fill: #e8f4f8 !important;
+            }
+
+            .milestone-initial,
+            .milestone-revised {
+                filter: brightness(1.2);
+                stroke-width: 2px;
+            }
         }
 
+        .milestone-initial,
+        .milestone-revised {
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &:hover {
+                transform: scale(1.15);
+            }
+        }
+
+        text {
+            pointer-events: none;
+            user-select: none;
+        }
+    }
+
+    .connecting-lines {
         path {
-            stroke: #ccc;
-        }
-
-        text {
-            fill: #666;
-        }
-    }
-
-    .grid {
-        line {
-            shape-rendering: crispEdges;
-            opacity: 0.5;
-        }
-    }
-
-    .legend {
-        text {
-            fill: #333;
-            font-weight: 500;
-        }
-
-        rect {
             stroke: #999;
-            stroke-width: 0.5px;
+            stroke-dasharray: 4, 3;
+            fill: none;
+            pointer-events: none;
         }
+    }
+
+    marker#arrow path {
+        fill: #999;
     }
 }

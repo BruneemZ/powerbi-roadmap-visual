@@ -1,0 +1,7 @@
+ProjectID,ProjectName,ProjectInfo,MilestoneName,InitialDate,RevisedDate,Category
+A,AZTech India,2 routes,Pre-pilot,2025-03-01,2025-04-15,Phase 1
+A,AZTech India,2 routes,Pilot Start,2025-06-01,2025-07-01,Phase 1
+A,AZTech India,2 routes,Q4 Launch,2025-09-25,2025-10-25,Phase 2
+A,AZTech India,2 routes,Q1 Review,2026-01-15,,Phase 3
+B,BioTech EU,1 route,Kickoff,2025-02-01,2025-02-15,Phase 1
+B,BioTech EU,1 route,Delivery,2025-08-01,2025-09-15,Phase 2

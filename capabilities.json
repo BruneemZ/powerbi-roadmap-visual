@@ -1,29 +1,39 @@
 {
   "dataRoles": [
     {
-      "displayName": "Tâche",
-      "name": "task",
+      "displayName": "ID Projet",
+      "name": "projectId",
       "kind": "Grouping"
     },
     {
-      "displayName": "Date de début",
-      "name": "startDate",
+      "displayName": "Nom du projet",
+      "name": "projectName",
       "kind": "Grouping"
     },
     {
-      "displayName": "Date de fin",
-      "name": "endDate",
+      "displayName": "Info projet",
+      "name": "projectInfo",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Nom du milestone",
+      "name": "milestoneName",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Date initiale",
+      "name": "initialDate",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Date révisée",
+      "name": "revisedDate",
       "kind": "Grouping"
     },
     {
       "displayName": "Catégorie",
       "name": "category",
       "kind": "Grouping"
-    },
-    {
-      "displayName": "Progression (%)",
-      "name": "progress",
-      "kind": "Measure"
     }
   ],
   "dataViewMappings": [
@@ -33,27 +43,37 @@
           "select": [
             {
               "for": {
-                "in": "task"
+                "in": "projectId"
               }
             },
             {
               "for": {
-                "in": "startDate"
+                "in": "projectName"
               }
             },
             {
               "for": {
-                "in": "endDate"
+                "in": "projectInfo"
+              }
+            },
+            {
+              "for": {
+                "in": "milestoneName"
+              }
+            },
+            {
+              "for": {
+                "in": "initialDate"
+              }
+            },
+            {
+              "for": {
+                "in": "revisedDate"
               }
             },
             {
               "for": {
                 "in": "category"
-              }
-            },
-            {
-              "for": {
-                "in": "progress"
               }
             }
           ]
@@ -62,29 +82,51 @@
     }
   ],
   "objects": {
-    "roadmapSettings": {
-      "displayName": "Paramètres Roadmap",
+    "milestoneSettings": {
+      "displayName": "Paramètres Milestones",
       "properties": {
-        "barHeight": {
-          "displayName": "Hauteur des barres",
+        "triangleSize": {
+          "displayName": "Taille des triangles",
           "type": {
             "numeric": true
           }
         },
-        "showGrid": {
-          "displayName": "Afficher la grille",
-          "type": {
-            "bool": true
-          }
-        },
-        "colorScheme": {
-          "displayName": "Jeu de couleurs",
+        "initialTriangleColor": {
+          "displayName": "Couleur date initiale",
           "type": {
             "fill": {
               "solid": {
                 "color": true
               }
             }
+          }
+        },
+        "revisedTriangleColor": {
+          "displayName": "Couleur date révisée",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "showConnectingLines": {
+          "displayName": "Afficher les lignes de connexion",
+          "type": {
+            "bool": true
+          }
+        },
+        "quarterHeaderHeight": {
+          "displayName": "Hauteur en-tête trimestres",
+          "type": {
+            "numeric": true
+          }
+        },
+        "rowHeight": {
+          "displayName": "Hauteur des lignes",
+          "type": {
+            "numeric": true
           }
         }
       }

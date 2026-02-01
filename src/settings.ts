@@ -6,17 +6,51 @@ import FormattingSettingsSlice = formattingSettings.Slice;
 import FormattingSettingsModel = formattingSettings.Model;
 
 /**
- * Paramètres de la roadmap
+ * Paramètres des milestones
  */
-class RoadmapSettingsCard extends FormattingSettingsCard {
-    barHeight = new formattingSettings.NumUpDown({
-        name: "barHeight",
-        displayName: "Hauteur des barres",
-        value: 30,
+class MilestoneSettingsCard extends FormattingSettingsCard {
+    triangleSize = new formattingSettings.NumUpDown({
+        name: "triangleSize",
+        displayName: "Taille des triangles",
+        value: 12,
         options: {
             minValue: {
                 type: powerbi.visuals.ValidatorType.Min,
-                value: 20,
+                value: 8,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 24,
+            }
+        }
+    });
+
+    initialTriangleColor = new formattingSettings.ColorPicker({
+        name: "initialTriangleColor",
+        displayName: "Couleur date initiale",
+        value: { value: "#808080" }
+    });
+
+    revisedTriangleColor = new formattingSettings.ColorPicker({
+        name: "revisedTriangleColor",
+        displayName: "Couleur date révisée",
+        value: { value: "#FFA500" }
+    });
+
+    showConnectingLines = new formattingSettings.ToggleSwitch({
+        name: "showConnectingLines",
+        displayName: "Afficher les lignes de connexion",
+        value: true
+    });
+
+    quarterHeaderHeight = new formattingSettings.NumUpDown({
+        name: "quarterHeaderHeight",
+        displayName: "Hauteur en-tête trimestres",
+        value: 60,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 40,
             },
             maxValue: {
                 type: powerbi.visuals.ValidatorType.Max,
@@ -25,21 +59,38 @@ class RoadmapSettingsCard extends FormattingSettingsCard {
         }
     });
 
-    showGrid = new formattingSettings.ToggleSwitch({
-        name: "showGrid",
-        displayName: "Afficher la grille",
-        value: true
+    rowHeight = new formattingSettings.NumUpDown({
+        name: "rowHeight",
+        displayName: "Hauteur des lignes",
+        value: 40,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 30,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 80,
+            }
+        }
     });
 
-    name: string = "roadmapSettings";
-    displayName: string = "Paramètres Roadmap";
-    slices: Array<FormattingSettingsSlice> = [this.barHeight, this.showGrid];
+    name: string = "milestoneSettings";
+    displayName: string = "Paramètres Milestones";
+    slices: Array<FormattingSettingsSlice> = [
+        this.triangleSize,
+        this.initialTriangleColor,
+        this.revisedTriangleColor,
+        this.showConnectingLines,
+        this.quarterHeaderHeight,
+        this.rowHeight
+    ];
 }
 
 /**
  * Modèle de paramètres du visuel
  */
 export class VisualFormattingSettingsModel extends FormattingSettingsModel {
-    roadmapSettings = new RoadmapSettingsCard();
-    cards = [this.roadmapSettings];
+    milestoneSettings = new MilestoneSettingsCard();
+    cards = [this.milestoneSettings];
 }
