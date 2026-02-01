@@ -1,13 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-// Créer une icône PNG 20x20 avec un design de roadmap
-// Icône avec triangles et ligne (représentant les milestones)
-// Format PNG base64 pour une icône 20x20 colorée
-const iconBase64 = 'iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAADdgAAA3YBfdWCzAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAHrSURBVDiNpZTPaxNBFMe/M5tNshvTNKlVq1ZBPAiiBy+9ePLgQT15EMGL/gP+Ax70IHjx4sGDF8GDBy8iCJ4EQfAiePAgCFYptaK1aZPdZHd3Zl4Pm7RJu0kT/MCy7Lz55jPvx3szhBDQNAUACCEQQkAIQZ7n4JxDKQUhBIwxMMZgjIFzDiEEGGMQQoDWGpxzcM6hlIIQApxz5HkOIQSklBBCgDEGxhiUUlBKQQgBrTWklOCcg3MOzjmEEBBCQGuNLMsghIAQAppSCqUUpJSQUkIpBa01pJRgjEEpBSklhBBgjEEIASkllFJQSoExBs45lFLQWkMpBaUUpJTgnEMIAS4E8jyHlBKEEBAhBJRSYIyBEALOObTWEEJAKQWtNZRSYIyBMQYhBJRSyPMcnHNwziGlhBACWmsopVDkOZRSSCkRQkBrDcYYKKWQUoIQgizLkGUZOOdQSkEpBSklCCFgjIFzjjzPoZQC5xxCCAghwDkH5xxKKWitIaWElBJCCGRZBiklGGPgnEM6nUbbNDGdzVCkKQjnSNM0vBNCQGuNJEkQxzEopchms+h0OpBSgjv2A8MwMN6bIEkSVCoV1Go1uK4LKSUs28bK3h6azSZM00RjYwNBEMAwjCdDwzAgpURRFB/hpK7r/9x/ADLJnG0tSrAlAAAAAElFTkSuQmCC';
+// Créer une icône PNG 20x20 simple pour Power BI
+// Icône avec fond blanc et design simple de roadmap (triangles colorés)
+// PNG 20x20 avec fond blanc opaque
+const iconBase64 = 'iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADsSURBVDhP7ZSxDYQwDEVNxQAswAiMkDYSO7ACIzACbMQGjMAIFEjUdBQ+yRGHkxMpKfgSUvT82Y4dO47jHIOZTWY2mdnEzM5mdmVmdzN7mtnLzIqiKH6Pc84rIrKXUs6pqTkR2UdRdOn+zyAivZRyiHPO67p+x3nvtJTyhpmNWmsFEVkopTZKqY1SalVK3UdRdPn8OiGlnJRSWynlEudcXdf1O857R0Q6KeWklNpGUXTp/s8QQgxaa4WI9FrrRQgx/OQ6IYRYtNYKEdkHIcafXCeEGIQQo9Z6QUTW4Vzn/z+O85/wzD4An6ZLp4DsJbQAAAAASUVORK5CYII=';
 
 const iconBuffer = Buffer.from(iconBase64, 'base64');
 const iconPath = path.join(__dirname, 'assets', 'icon.png');
 
 fs.writeFileSync(iconPath, iconBuffer);
 console.log('Icône créée avec succès:', iconPath);
+console.log('Taille:', iconBuffer.length, 'bytes');

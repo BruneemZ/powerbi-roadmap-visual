@@ -81,6 +81,56 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
         }
     });
 
+    projectBackgroundColor = new formattingSettings.ColorPicker({
+        name: "projectBackgroundColor",
+        displayName: "Couleur fond projet",
+        value: { value: "#e8f4f8" }
+    });
+
+    milestoneBackgroundColor1 = new formattingSettings.ColorPicker({
+        name: "milestoneBackgroundColor1",
+        displayName: "Couleur milestone (ligne 1)",
+        value: { value: "#fafafa" }
+    });
+
+    milestoneBackgroundColor2 = new formattingSettings.ColorPicker({
+        name: "milestoneBackgroundColor2",
+        displayName: "Couleur milestone (ligne 2)",
+        value: { value: "#ffffff" }
+    });
+
+    projectFontSize = new formattingSettings.NumUpDown({
+        name: "projectFontSize",
+        displayName: "Taille police projet",
+        value: 12,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 8,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 20,
+            }
+        }
+    });
+
+    milestoneFontSize = new formattingSettings.NumUpDown({
+        name: "milestoneFontSize",
+        displayName: "Taille police milestone",
+        value: 10,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 8,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 16,
+            }
+        }
+    });
+
     name: string = "milestoneSettings";
     displayName: string = "Paramètres Milestones";
     slices: Array<FormattingSettingsSlice> = [
@@ -90,7 +140,12 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
         this.greenColor,
         this.showConnectingLines,
         this.quarterHeaderHeight,
-        this.rowHeight
+        this.rowHeight,
+        this.projectBackgroundColor,
+        this.milestoneBackgroundColor1,
+        this.milestoneBackgroundColor2,
+        this.projectFontSize,
+        this.milestoneFontSize
     ];
 }
 

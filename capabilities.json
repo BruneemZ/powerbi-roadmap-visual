@@ -148,6 +148,48 @@
           "type": {
             "numeric": true
           }
+        },
+        "projectBackgroundColor": {
+          "displayName": "Couleur fond projet",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "milestoneBackgroundColor1": {
+          "displayName": "Couleur milestone (ligne 1)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "milestoneBackgroundColor2": {
+          "displayName": "Couleur milestone (ligne 2)",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "projectFontSize": {
+          "displayName": "Taille police projet",
+          "type": {
+            "numeric": true
+          }
+        },
+        "milestoneFontSize": {
+          "displayName": "Taille police milestone",
+          "type": {
+            "numeric": true
+          }
         }
       }
     },

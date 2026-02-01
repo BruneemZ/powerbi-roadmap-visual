@@ -197,6 +197,62 @@ export class Visual implements IVisual {
         }
     }
 
+    private wrapText(
+        container: d3.Selection<SVGGElement, any, any, any>,
+        text: string,
+        x: number,
+        y: number,
+        maxWidth: number,
+        fontSize: number,
+        fill: string
+    ): void {
+        const words = text.split(/\s+/);
+        let line: string[] = [];
+        let lineNumber = 0;
+        const lineHeight = fontSize * 1.2;
+        const textAnchor = "end";
+
+        const textElement = container.append("text")
+            .attr("x", x)
+            .attr("y", y)
+            .attr("text-anchor", textAnchor)
+            .attr("font-size", fontSize + "px")
+            .attr("fill", fill);
+
+        let tspan = textElement.append("tspan")
+            .attr("x", x)
+            .attr("dy", 0);
+
+        // Estimation approximative de la largeur d'un caractère
+        const charWidth = fontSize * 0.6;
+
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            line.push(word);
+            const testLine = line.join(" ");
+            const testWidth = testLine.length * charWidth;
+
+            if (testWidth > maxWidth && line.length > 1) {
+                // Retirer le dernier mot et créer une nouvelle ligne
+                line.pop();
+                tspan.text(line.join(" "));
+                line = [word];
+                lineNumber++;
+                tspan = textElement.append("tspan")
+                    .attr("x", x)
+                    .attr("dy", lineHeight)
+                    .text(word);
+            } else {
+                tspan.text(testLine);
+            }
+        }
+
+        // Ajuster la position verticale pour centrer le bloc de texte
+        const totalHeight = (lineNumber + 1) * lineHeight;
+        const offsetY = -totalHeight / 2 + fontSize / 2;
+        textElement.attr("transform", `translate(0, ${offsetY})`);
+    }
+
     private renderRoadmap(width: number, height: number): void {
         const margin = { top: 80, right: 40, bottom: 30, left: 250 };
         const innerWidth = width - margin.left - margin.right;
@@ -384,7 +440,7 @@ export class Visual implements IVisual {
                 .attr("y", 0)
                 .attr("width", innerWidth + 250)
                 .attr("height", rowHeight)
-                .attr("fill", "#e8f4f8")
+                .attr("fill", this.formattingSettings.milestoneSettings.projectBackgroundColor.value.value)
                 .attr("stroke", "#ccc");
 
             // Nom du projet (en gras)
@@ -392,19 +448,10 @@ export class Visual implements IVisual {
                 .attr("x", -230)
                 .attr("y", rowHeight / 2)
                 .attr("dominant-baseline", "middle")
-                .attr("font-size", "12px")
+                .attr("font-size", this.formattingSettings.milestoneSettings.projectFontSize.value + "px")
                 .attr("font-weight", "bold")
                 .attr("fill", "#333")
-                .text(`${project.projectId} - ${project.projectName}`);
-
-            // Info du projet (sur la même ligne, à droite du nom)
-            projectHeaderGroup.append("text")
-                .attr("x", -230 + (project.projectId + " - " + project.projectName).length * 7 + 10)
-                .attr("y", rowHeight / 2)
-                .attr("dominant-baseline", "middle")
-                .attr("font-size", "10px")
-                .attr("fill", "#666")
-                .text(`(${project.projectInfo})`);
+                .text(`${project.projectId} - ${project.projectName}  (${project.projectInfo})`);
 
             currentY += rowHeight; // Incrémenter pour l'en-tête du projet
 
@@ -417,12 +464,16 @@ export class Visual implements IVisual {
                     .attr("transform", `translate(0, ${milestoneY})`);
 
                 // Rectangle de fond
+                const bgColor = idx % 2 === 0 ?
+                    this.formattingSettings.milestoneSettings.milestoneBackgroundColor1.value.value :
+                    this.formattingSettings.milestoneSettings.milestoneBackgroundColor2.value.value;
+
                 milestoneGroup.append("rect")
                     .attr("x", -250)
                     .attr("y", 0)
                     .attr("width", innerWidth + 250)
                     .attr("height", rowHeight)
-                    .attr("fill", idx % 2 === 0 ? "#fafafa" : "#fff")
+                    .attr("fill", bgColor)
                     .attr("stroke", "#eee");
 
                 // Déterminer la couleur basée sur le statut
@@ -470,15 +521,16 @@ export class Visual implements IVisual {
                         .text(d3.timeFormat("%b %Y")(milestone.revisedDate));
                 }
 
-                // Nom du milestone (indenté, aligné à droite avant la timeline)
-                milestoneGroup.append("text")
-                    .attr("x", -10)
-                    .attr("y", rowHeight / 2)
-                    .attr("text-anchor", "end")
-                    .attr("dominant-baseline", "middle")
-                    .attr("font-size", "10px")
-                    .attr("fill", "#555")
-                    .text(`  ${milestone.milestoneName}`);
+                // Nom du milestone avec retour à la ligne automatique
+                this.wrapText(
+                    milestoneGroup,
+                    milestone.milestoneName,
+                    -10,
+                    rowHeight / 2,
+                    220, // Largeur maximale pour le texte
+                    this.formattingSettings.milestoneSettings.milestoneFontSize.value,
+                    "#555"
+                );
             });
 
             currentY += project.milestones.length * rowHeight;
