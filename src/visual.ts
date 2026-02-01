@@ -185,15 +185,15 @@ export class Visual implements IVisual {
     private getColorByStatus(status: string): string {
         const statusLower = status.toLowerCase();
 
-        if (statusLower.includes("planif") || statusLower.includes("planned")) {
-            return this.formattingSettings.milestoneSettings.plannedColor.value.value;
-        } else if (statusLower.includes("cours") || statusLower.includes("progress")) {
-            return this.formattingSettings.milestoneSettings.inProgressColor.value.value;
-        } else if (statusLower.includes("termin") || statusLower.includes("complet") || statusLower.includes("done")) {
-            return this.formattingSettings.milestoneSettings.completedColor.value.value;
+        if (statusLower.includes("red") || statusLower.includes("rouge")) {
+            return this.formattingSettings.milestoneSettings.redColor.value.value;
+        } else if (statusLower.includes("amber") || statusLower.includes("ambre") || statusLower.includes("orange")) {
+            return this.formattingSettings.milestoneSettings.amberColor.value.value;
+        } else if (statusLower.includes("green") || statusLower.includes("vert")) {
+            return this.formattingSettings.milestoneSettings.greenColor.value.value;
         } else {
-            // Par défaut: planifié
-            return this.formattingSettings.milestoneSettings.plannedColor.value.value;
+            // Par défaut: green
+            return this.formattingSettings.milestoneSettings.greenColor.value.value;
         }
     }
 
@@ -215,13 +215,27 @@ export class Visual implements IVisual {
             }
         });
 
-        // Utiliser les dates min/max des données
-        const minDate = d3.min(allDates)!;
-        const maxDate = d3.max(allDates)!;
+        let startDate: Date;
+        let endDate: Date;
 
-        // Arrondir aux limites de mois
-        const startDate = d3.timeMonth.floor(minDate);
-        const endDate = d3.timeMonth.ceil(maxDate);
+        // Utiliser les paramètres de timeline si activés
+        if (this.formattingSettings.timelineSettings.useCustomRange.value) {
+            const startYear = this.formattingSettings.timelineSettings.startYear.value;
+            const startMonth = this.formattingSettings.timelineSettings.startMonth.value - 1; // JavaScript months are 0-indexed
+            const endYear = this.formattingSettings.timelineSettings.endYear.value;
+            const endMonth = this.formattingSettings.timelineSettings.endMonth.value - 1;
+
+            startDate = new Date(startYear, startMonth, 1);
+            endDate = new Date(endYear, endMonth + 1, 0); // Last day of endMonth
+        } else {
+            // Utiliser les dates min/max des données
+            const minDate = d3.min(allDates)!;
+            const maxDate = d3.max(allDates)!;
+
+            // Arrondir aux limites de mois
+            startDate = d3.timeMonth.floor(minDate);
+            endDate = d3.timeMonth.ceil(maxDate);
+        }
 
         // Échelle temporelle
         const xScale = d3.scaleTime()
@@ -359,25 +373,40 @@ export class Visual implements IVisual {
         let currentY = 0;
 
         projectGroups.forEach(project => {
-            // Groupe pour le projet
-            const projectGroup = container.append("g")
-                .attr("class", "project-group")
+            // Ligne d'en-tête du projet
+            const projectHeaderGroup = container.append("g")
+                .attr("class", "project-header")
                 .attr("transform", `translate(0, ${currentY})`);
 
-            // Labels du projet (colonne de gauche)
-            projectGroup.append("text")
-                .attr("x", -220)
+            // Rectangle de fond pour l'en-tête du projet
+            projectHeaderGroup.append("rect")
+                .attr("x", -250)
+                .attr("y", 0)
+                .attr("width", innerWidth + 250)
+                .attr("height", rowHeight)
+                .attr("fill", "#e8f4f8")
+                .attr("stroke", "#ccc");
+
+            // Nom du projet (en gras)
+            projectHeaderGroup.append("text")
+                .attr("x", -230)
                 .attr("y", rowHeight / 2)
-                .attr("font-size", "11px")
+                .attr("dominant-baseline", "middle")
+                .attr("font-size", "12px")
                 .attr("font-weight", "bold")
+                .attr("fill", "#333")
                 .text(`${project.projectId} - ${project.projectName}`);
 
-            projectGroup.append("text")
-                .attr("x", -220)
-                .attr("y", rowHeight / 2 + 14)
-                .attr("font-size", "9px")
+            // Info du projet (sur la même ligne, à droite du nom)
+            projectHeaderGroup.append("text")
+                .attr("x", -230 + (project.projectId + " - " + project.projectName).length * 7 + 10)
+                .attr("y", rowHeight / 2)
+                .attr("dominant-baseline", "middle")
+                .attr("font-size", "10px")
                 .attr("fill", "#666")
-                .text(project.projectInfo);
+                .text(`(${project.projectInfo})`);
+
+            currentY += rowHeight; // Incrémenter pour l'en-tête du projet
 
             // Rendu de chaque milestone du projet
             project.milestones.forEach((milestone, idx) => {
@@ -441,14 +470,15 @@ export class Visual implements IVisual {
                         .text(d3.timeFormat("%b %Y")(milestone.revisedDate));
                 }
 
-                // Nom du milestone (aligné à droite avant la timeline)
+                // Nom du milestone (indenté, aligné à droite avant la timeline)
                 milestoneGroup.append("text")
                     .attr("x", -10)
                     .attr("y", rowHeight / 2)
                     .attr("text-anchor", "end")
                     .attr("dominant-baseline", "middle")
                     .attr("font-size", "10px")
-                    .text(milestone.milestoneName);
+                    .attr("fill", "#555")
+                    .text(`  ${milestone.milestoneName}`);
             });
 
             currentY += project.milestones.length * rowHeight;
@@ -484,44 +514,30 @@ export class Visual implements IVisual {
         let currentY = 0;
 
         projectGroups.forEach(project => {
-            // Trier les milestones par date effective (révisée si existe, sinon initiale)
-            const sortedMilestones = [...project.milestones].sort((a, b) => {
-                const dateA = a.revisedDate || a.initialDate;
-                const dateB = b.revisedDate || b.revisedDate;
-                return dateA.getTime() - dateB.getTime();
+            // Sauter la ligne d'en-tête du projet
+            currentY += rowHeight;
+
+            // Tracer une flèche entre la date initiale et la date révisée du même milestone
+            project.milestones.forEach((milestone, idx) => {
+                // Vérifier si le milestone a une date révisée
+                if (milestone.revisedDate) {
+                    const x1 = xScale(milestone.initialDate);
+                    const y1 = currentY + idx * rowHeight + rowHeight / 2;
+                    const x2 = xScale(milestone.revisedDate);
+                    const y2 = currentY + idx * rowHeight + rowHeight / 2; // Même ligne
+
+                    // Créer une ligne horizontale avec flèche
+                    const pathData = `M ${x1},${y1} L ${x2},${y2}`;
+
+                    linesGroup.append("path")
+                        .attr("d", pathData)
+                        .attr("fill", "none")
+                        .attr("stroke", "#999")
+                        .attr("stroke-width", 1.5)
+                        .attr("stroke-dasharray", "4,3")
+                        .attr("marker-end", "url(#arrow)");
+                }
             });
-
-            // Tracer les lignes entre milestones consécutifs
-            for (let i = 0; i < sortedMilestones.length - 1; i++) {
-                const current = sortedMilestones[i];
-                const next = sortedMilestones[i + 1];
-
-                // Utiliser date révisée si disponible, sinon initiale
-                const currentDate = current.revisedDate || current.initialDate;
-                const nextDate = next.revisedDate || next.initialDate;
-
-                // Trouver l'index dans le tableau original pour calculer le Y
-                const currentIdx = project.milestones.indexOf(current);
-                const nextIdx = project.milestones.indexOf(next);
-
-                const x1 = xScale(currentDate);
-                const y1 = currentY + currentIdx * rowHeight + rowHeight / 2;
-                const x2 = xScale(nextDate);
-                const y2 = currentY + nextIdx * rowHeight + rowHeight / 2;
-
-                // Créer un chemin courbe
-                const midX = (x1 + x2) / 2;
-                const controlY = Math.min(y1, y2) - 20;
-                const pathData = `M ${x1},${y1} Q ${midX},${controlY} ${x2},${y2}`;
-
-                linesGroup.append("path")
-                    .attr("d", pathData)
-                    .attr("fill", "none")
-                    .attr("stroke", "#999")
-                    .attr("stroke-width", 1.5)
-                    .attr("stroke-dasharray", "4,3")
-                    .attr("marker-end", "url(#arrow)");
-            }
 
             currentY += project.milestones.length * rowHeight;
         });

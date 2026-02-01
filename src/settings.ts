@@ -25,22 +25,22 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
         }
     });
 
-    plannedColor = new formattingSettings.ColorPicker({
-        name: "plannedColor",
-        displayName: "Couleur Planifié",
-        value: { value: "#808080" }
+    redColor = new formattingSettings.ColorPicker({
+        name: "redColor",
+        displayName: "Couleur Red",
+        value: { value: "#DC3545" }
     });
 
-    inProgressColor = new formattingSettings.ColorPicker({
-        name: "inProgressColor",
-        displayName: "Couleur En cours",
-        value: { value: "#FFA500" }
+    amberColor = new formattingSettings.ColorPicker({
+        name: "amberColor",
+        displayName: "Couleur Amber",
+        value: { value: "#FFC107" }
     });
 
-    completedColor = new formattingSettings.ColorPicker({
-        name: "completedColor",
-        displayName: "Couleur Terminé",
-        value: { value: "#4CAF50" }
+    greenColor = new formattingSettings.ColorPicker({
+        name: "greenColor",
+        displayName: "Couleur Green",
+        value: { value: "#28A745" }
     });
 
     showConnectingLines = new formattingSettings.ToggleSwitch({
@@ -85,12 +85,97 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
     displayName: string = "Paramètres Milestones";
     slices: Array<FormattingSettingsSlice> = [
         this.triangleSize,
-        this.plannedColor,
-        this.inProgressColor,
-        this.completedColor,
+        this.redColor,
+        this.amberColor,
+        this.greenColor,
         this.showConnectingLines,
         this.quarterHeaderHeight,
         this.rowHeight
+    ];
+}
+
+/**
+ * Paramètres de la timeline
+ */
+class TimelineSettingsCard extends FormattingSettingsCard {
+    startYear = new formattingSettings.NumUpDown({
+        name: "startYear",
+        displayName: "Année de début",
+        value: 2025,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 2020,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 2050,
+            }
+        }
+    });
+
+    startMonth = new formattingSettings.NumUpDown({
+        name: "startMonth",
+        displayName: "Mois de début (1-12)",
+        value: 1,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 1,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 12,
+            }
+        }
+    });
+
+    endYear = new formattingSettings.NumUpDown({
+        name: "endYear",
+        displayName: "Année de fin",
+        value: 2026,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 2020,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 2050,
+            }
+        }
+    });
+
+    endMonth = new formattingSettings.NumUpDown({
+        name: "endMonth",
+        displayName: "Mois de fin (1-12)",
+        value: 12,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 1,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 12,
+            }
+        }
+    });
+
+    useCustomRange = new formattingSettings.ToggleSwitch({
+        name: "useCustomRange",
+        displayName: "Utiliser période personnalisée",
+        value: false
+    });
+
+    name: string = "timelineSettings";
+    displayName: string = "Paramètres Timeline";
+    slices: Array<FormattingSettingsSlice> = [
+        this.useCustomRange,
+        this.startYear,
+        this.startMonth,
+        this.endYear,
+        this.endMonth
     ];
 }
 
@@ -99,5 +184,6 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
  */
 export class VisualFormattingSettingsModel extends FormattingSettingsModel {
     milestoneSettings = new MilestoneSettingsCard();
-    cards = [this.milestoneSettings];
+    timelineSettings = new TimelineSettingsCard();
+    cards = [this.milestoneSettings, this.timelineSettings];
 }

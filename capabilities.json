@@ -101,8 +101,8 @@
             "numeric": true
           }
         },
-        "plannedColor": {
-          "displayName": "Couleur Planifié",
+        "redColor": {
+          "displayName": "Couleur Red",
           "type": {
             "fill": {
               "solid": {
@@ -111,8 +111,8 @@
             }
           }
         },
-        "inProgressColor": {
-          "displayName": "Couleur En cours",
+        "amberColor": {
+          "displayName": "Couleur Amber",
           "type": {
             "fill": {
               "solid": {
@@ -121,8 +121,8 @@
             }
           }
         },
-        "completedColor": {
-          "displayName": "Couleur Terminé",
+        "greenColor": {
+          "displayName": "Couleur Green",
           "type": {
             "fill": {
               "solid": {
@@ -145,6 +145,41 @@
         },
         "rowHeight": {
           "displayName": "Hauteur des lignes",
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "timelineSettings": {
+      "displayName": "Paramètres Timeline",
+      "properties": {
+        "useCustomRange": {
+          "displayName": "Utiliser période personnalisée",
+          "type": {
+            "bool": true
+          }
+        },
+        "startYear": {
+          "displayName": "Année de début",
+          "type": {
+            "numeric": true
+          }
+        },
+        "startMonth": {
+          "displayName": "Mois de début",
+          "type": {
+            "numeric": true
+          }
+        },
+        "endYear": {
+          "displayName": "Année de fin",
+          "type": {
+            "numeric": true
+          }
+        },
+        "endMonth": {
+          "displayName": "Mois de fin",
           "type": {
             "numeric": true
           }
