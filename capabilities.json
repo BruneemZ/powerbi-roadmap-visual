@@ -1,0 +1,94 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Tâche",
+      "name": "task",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Date de début",
+      "name": "startDate",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Date de fin",
+      "name": "endDate",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Catégorie",
+      "name": "category",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Progression (%)",
+      "name": "progress",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "table": {
+        "rows": {
+          "select": [
+            {
+              "for": {
+                "in": "task"
+              }
+            },
+            {
+              "for": {
+                "in": "startDate"
+              }
+            },
+            {
+              "for": {
+                "in": "endDate"
+              }
+            },
+            {
+              "for": {
+                "in": "category"
+              }
+            },
+            {
+              "for": {
+                "in": "progress"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "objects": {
+    "roadmapSettings": {
+      "displayName": "Paramètres Roadmap",
+      "properties": {
+        "barHeight": {
+          "displayName": "Hauteur des barres",
+          "type": {
+            "numeric": true
+          }
+        },
+        "showGrid": {
+          "displayName": "Afficher la grille",
+          "type": {
+            "bool": true
+          }
+        },
+        "colorScheme": {
+          "displayName": "Jeu de couleurs",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "privileges": []
+}

@@ -1,0 +1,73 @@
+.roadmap-svg {
+    width: 100%;
+    height: 100%;
+    font-family: "Segoe UI", wf_segoe-ui_normal, helvetica, arial, sans-serif;
+}
+
+.roadmap-container {
+    .task {
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+            .task-background {
+                opacity: 0.6;
+                stroke: #333;
+                stroke-width: 1px;
+            }
+
+            .task-progress {
+                filter: brightness(1.1);
+                stroke: #000;
+                stroke-width: 1px;
+            }
+
+            text {
+                font-weight: bold;
+                fill: #000;
+            }
+        }
+    }
+
+    .task-background {
+        transition: all 0.2s ease;
+    }
+
+    .task-progress {
+        transition: all 0.3s ease-in-out;
+        filter: brightness(1);
+    }
+
+    .x-axis {
+        line {
+            stroke: #ccc;
+        }
+
+        path {
+            stroke: #ccc;
+        }
+
+        text {
+            fill: #666;
+        }
+    }
+
+    .grid {
+        line {
+            shape-rendering: crispEdges;
+            opacity: 0.5;
+        }
+    }
+
+    .legend {
+        text {
+            fill: #333;
+            font-weight: 500;
+        }
+
+        rect {
+            stroke: #999;
+            stroke-width: 0.5px;
+        }
+    }
+}

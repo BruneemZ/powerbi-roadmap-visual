@@ -1,0 +1,28 @@
+CRÉATION DE L'ICÔNE POUR LE VISUEL POWER BI
+==========================================
+
+Power BI nécessite une icône au format PNG de 20x20 pixels nommée "icon.png".
+
+Un fichier SVG (icon.svg) est fourni dans ce dossier. Pour le convertir en PNG :
+
+Option 1 : Utiliser un convertisseur en ligne
+- Aller sur https://cloudconvert.com/svg-to-png
+- Uploader icon.svg
+- Définir la taille à 20x20 pixels
+- Télécharger et renommer en icon.png
+
+Option 2 : Utiliser un éditeur graphique
+- Ouvrir icon.svg avec Preview (macOS), GIMP, Inkscape, ou Photoshop
+- Exporter en PNG avec une taille de 20x20 pixels
+- Sauvegarder comme icon.png dans ce dossier
+
+Option 3 : Utiliser ImageMagick (si installé)
+```bash
+convert -background none -resize 20x20 icon.svg icon.png
+```
+
+Option 4 : Créer votre propre icône
+- Créer une image PNG de 20x20 pixels
+- La nommer icon.png et la placer dans ce dossier
+
+Une fois l'icône créée, le visuel pourra être packageé avec succès.

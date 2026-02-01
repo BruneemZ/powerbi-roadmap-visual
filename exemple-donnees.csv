@@ -1,0 +1,10 @@
+Tâche,Date de début,Date de fin,Catégorie,Progression
+Analyse des besoins,2026-01-01,2026-01-15,Planning,100
+Conception architecture,2026-01-10,2026-02-01,Design,80
+Développement Backend,2026-01-20,2026-03-15,Développement,45
+Développement Frontend,2026-02-01,2026-03-20,Développement,30
+Tests unitaires,2026-02-15,2026-03-25,Tests,25
+Tests d'intégration,2026-03-01,2026-04-05,Tests,10
+Documentation,2026-03-10,2026-04-10,Documentation,5
+Déploiement,2026-04-01,2026-04-15,Ops,0
+Formation utilisateurs,2026-04-05,2026-04-20,Formation,0

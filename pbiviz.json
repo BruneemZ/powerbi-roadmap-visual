@@ -1,0 +1,25 @@
+{
+  "visual": {
+    "name": "RoadmapVisual",
+    "displayName": "Roadmap Projet",
+    "guid": "roadmapVisual49E8F2A1D3B6C5E7",
+    "visualClassName": "Visual",
+    "version": "1.0.0.0",
+    "description": "Visuel de roadmap de projet interactif",
+    "supportUrl": "https://github.com/your-username/powerbi-roadmap-visual",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.1.0",
+  "author": {
+    "name": "Emmanuel Bruneau",
+    "email": "emmanuel@example.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": [],
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": []
+}
