@@ -204,7 +204,8 @@ export class Visual implements IVisual {
         y: number,
         maxWidth: number,
         fontSize: number,
-        fill: string
+        fill: string,
+        fontWeight: string = "normal"
     ): void {
         const words = text.split(/\s+/);
         let line: string[] = [];
@@ -217,6 +218,7 @@ export class Visual implements IVisual {
             .attr("y", y)
             .attr("text-anchor", textAnchor)
             .attr("font-size", fontSize + "px")
+            .attr("font-weight", fontWeight)
             .attr("fill", fill);
 
         let tspan = textElement.append("tspan")
@@ -260,7 +262,8 @@ export class Visual implements IVisual {
 
         const triangleSize = this.formattingSettings.milestoneSettings.triangleSize.value;
         const quarterHeaderHeight = this.formattingSettings.milestoneSettings.quarterHeaderHeight.value;
-        const rowHeight = this.formattingSettings.milestoneSettings.rowHeight.value;
+        const projectRowHeight = this.formattingSettings.milestoneSettings.projectRowHeight.value;
+        const milestoneRowHeight = this.formattingSettings.milestoneSettings.milestoneRowHeight.value;
 
         // Collecter toutes les dates (initiales + révisées)
         const allDates: Date[] = [];
@@ -311,10 +314,10 @@ export class Visual implements IVisual {
         this.renderQuarterHeaders(this.container, xScale, quarterHeaderHeight, innerWidth, innerHeight);
 
         // Rendu des milestones
-        this.renderMilestones(this.container, projectGroups, xScale, rowHeight, triangleSize, innerWidth);
+        this.renderMilestones(this.container, projectGroups, xScale, projectRowHeight, milestoneRowHeight, triangleSize, innerWidth);
 
         // Rendu des lignes de connexion
-        this.renderConnectingLines(this.container, projectGroups, xScale, rowHeight);
+        this.renderConnectingLines(this.container, projectGroups, xScale, projectRowHeight, milestoneRowHeight);
     }
 
     private renderQuarterHeaders(
@@ -369,12 +372,13 @@ export class Visual implements IVisual {
                 .attr("fill", "#f5f5f5")
                 .attr("stroke", "#ccc");
 
+            const yearFontSize = this.formattingSettings.milestoneSettings.yearFontSize.value;
             yearGroup.append("text")
                 .attr("x", (x1 + x2) / 2)
                 .attr("y", headerHeight / 4)
                 .attr("text-anchor", "middle")
                 .attr("dominant-baseline", "middle")
-                .attr("font-size", "14px")
+                .attr("font-size", yearFontSize + "px")
                 .attr("font-weight", "bold")
                 .text(year);
         });
@@ -396,25 +400,29 @@ export class Visual implements IVisual {
                 .attr("fill", "#fafafa")
                 .attr("stroke", "#ccc");
 
+            const quarterFontSize = this.formattingSettings.milestoneSettings.quarterFontSize.value;
             quarterGroup.append("text")
                 .attr("x", (x1 + x2) / 2)
                 .attr("y", headerHeight / 4)
                 .attr("text-anchor", "middle")
                 .attr("dominant-baseline", "middle")
-                .attr("font-size", "12px")
+                .attr("font-size", quarterFontSize + "px")
                 .text(`Q${q.quarter}`);
         });
 
-        // Lignes verticales de séparation
-        quarters.forEach(q => {
-            container.append("line")
-                .attr("class", "quarter-separator")
-                .attr("x1", xScale(q.startDate))
-                .attr("x2", xScale(q.startDate))
-                .attr("y1", -headerHeight - 10)
-                .attr("y2", innerHeight)
-                .attr("stroke", "#ddd")
-                .attr("stroke-width", 1);
+        // Lignes verticales de séparation (seulement entre les années, pas entre trimestres)
+        quarters.forEach((q, idx) => {
+            // Dessiner une ligne seulement si c'est le premier trimestre d'une année (Q1) et pas le premier trimestre global
+            if (q.quarter === 1 && idx > 0) {
+                container.append("line")
+                    .attr("class", "year-separator")
+                    .attr("x1", xScale(q.startDate))
+                    .attr("x2", xScale(q.startDate))
+                    .attr("y1", -headerHeight - 10)
+                    .attr("y2", innerHeight)
+                    .attr("stroke", "#999")
+                    .attr("stroke-width", 2);
+            }
         });
     }
 
@@ -422,11 +430,13 @@ export class Visual implements IVisual {
         container: d3.Selection<SVGGElement, any, any, any>,
         projectGroups: ProjectGroup[],
         xScale: d3.ScaleTime<number, number>,
-        rowHeight: number,
+        projectRowHeight: number,
+        milestoneRowHeight: number,
         triangleSize: number,
         innerWidth: number
     ): void {
         let currentY = 0;
+        const textMaxWidth = 220; // Largeur max pour le texte (même pour projet et milestone)
 
         projectGroups.forEach(project => {
             // Ligne d'en-tête du projet
@@ -439,25 +449,28 @@ export class Visual implements IVisual {
                 .attr("x", -250)
                 .attr("y", 0)
                 .attr("width", innerWidth + 250)
-                .attr("height", rowHeight)
+                .attr("height", projectRowHeight)
                 .attr("fill", this.formattingSettings.milestoneSettings.projectBackgroundColor.value.value)
                 .attr("stroke", "#ccc");
 
-            // Nom du projet (en gras)
-            projectHeaderGroup.append("text")
-                .attr("x", -230)
-                .attr("y", rowHeight / 2)
-                .attr("dominant-baseline", "middle")
-                .attr("font-size", this.formattingSettings.milestoneSettings.projectFontSize.value + "px")
-                .attr("font-weight", "bold")
-                .attr("fill", "#333")
-                .text(`${project.projectId} - ${project.projectName}  (${project.projectInfo})`);
+            // Nom du projet avec retour à la ligne automatique
+            const projectText = `${project.projectId} - ${project.projectName}  (${project.projectInfo})`;
+            this.wrapText(
+                projectHeaderGroup,
+                projectText,
+                -10,
+                projectRowHeight / 2,
+                textMaxWidth,
+                this.formattingSettings.milestoneSettings.projectFontSize.value,
+                "#333",
+                "bold"
+            );
 
-            currentY += rowHeight; // Incrémenter pour l'en-tête du projet
+            currentY += projectRowHeight; // Incrémenter pour l'en-tête du projet
 
             // Rendu de chaque milestone du projet
             project.milestones.forEach((milestone, idx) => {
-                const milestoneY = currentY + idx * rowHeight;
+                const milestoneY = currentY + idx * milestoneRowHeight;
 
                 const milestoneGroup = container.append("g")
                     .attr("class", "milestone")
@@ -472,7 +485,7 @@ export class Visual implements IVisual {
                     .attr("x", -250)
                     .attr("y", 0)
                     .attr("width", innerWidth + 250)
-                    .attr("height", rowHeight)
+                    .attr("height", milestoneRowHeight)
                     .attr("fill", bgColor)
                     .attr("stroke", "#eee");
 
@@ -483,7 +496,7 @@ export class Visual implements IVisual {
                 const initialX = xScale(milestone.initialDate);
                 milestoneGroup.append("path")
                     .attr("class", "milestone-initial")
-                    .attr("d", this.createTrianglePath(initialX, rowHeight / 2, triangleSize, 'up'))
+                    .attr("d", this.createTrianglePath(initialX, milestoneRowHeight / 2, triangleSize, 'up'))
                     .attr("fill", triangleColor)
                     .attr("stroke", "#555")
                     .attr("stroke-width", 1);
@@ -493,11 +506,12 @@ export class Visual implements IVisual {
                     .text(`${milestone.milestoneName}\nStatut: ${milestone.status}\nDate initiale: ${d3.timeFormat("%d %b %Y")(milestone.initialDate)}`);
 
                 // Label date initiale
+                const dateLabelFontSize = this.formattingSettings.milestoneSettings.dateLabelFontSize.value;
                 milestoneGroup.append("text")
                     .attr("x", initialX)
-                    .attr("y", rowHeight / 2 - triangleSize / 2 - 4)
+                    .attr("y", milestoneRowHeight / 2 - triangleSize / 2 - 4)
                     .attr("text-anchor", "middle")
-                    .attr("font-size", "9px")
+                    .attr("font-size", dateLabelFontSize + "px")
                     .attr("fill", "#666")
                     .text(d3.timeFormat("%b %Y")(milestone.initialDate));
 
@@ -506,7 +520,7 @@ export class Visual implements IVisual {
                     const revisedX = xScale(milestone.revisedDate);
                     milestoneGroup.append("path")
                         .attr("class", "milestone-revised")
-                        .attr("d", this.createTrianglePath(revisedX, rowHeight / 2, triangleSize, 'up'))
+                        .attr("d", this.createTrianglePath(revisedX, milestoneRowHeight / 2, triangleSize, 'up'))
                         .attr("fill", triangleColor)
                         .attr("stroke", "#555")
                         .attr("stroke-width", 1);
@@ -514,9 +528,9 @@ export class Visual implements IVisual {
                     // Label date révisée
                     milestoneGroup.append("text")
                         .attr("x", revisedX)
-                        .attr("y", rowHeight / 2 + triangleSize / 2 + 12)
+                        .attr("y", milestoneRowHeight / 2 + triangleSize / 2 + 12)
                         .attr("text-anchor", "middle")
-                        .attr("font-size", "9px")
+                        .attr("font-size", dateLabelFontSize + "px")
                         .attr("fill", "#666")
                         .text(d3.timeFormat("%b %Y")(milestone.revisedDate));
                 }
@@ -526,14 +540,15 @@ export class Visual implements IVisual {
                     milestoneGroup,
                     milestone.milestoneName,
                     -10,
-                    rowHeight / 2,
-                    220, // Largeur maximale pour le texte
+                    milestoneRowHeight / 2,
+                    textMaxWidth, // Même largeur que projet
                     this.formattingSettings.milestoneSettings.milestoneFontSize.value,
-                    "#555"
+                    "#555",
+                    "normal"
                 );
             });
 
-            currentY += project.milestones.length * rowHeight;
+            currentY += project.milestones.length * milestoneRowHeight;
         });
     }
 
@@ -541,7 +556,8 @@ export class Visual implements IVisual {
         container: d3.Selection<SVGGElement, any, any, any>,
         projectGroups: ProjectGroup[],
         xScale: d3.ScaleTime<number, number>,
-        rowHeight: number
+        projectRowHeight: number,
+        milestoneRowHeight: number
     ): void {
         if (!this.formattingSettings.milestoneSettings.showConnectingLines.value) {
             return;
@@ -567,16 +583,16 @@ export class Visual implements IVisual {
 
         projectGroups.forEach(project => {
             // Sauter la ligne d'en-tête du projet
-            currentY += rowHeight;
+            currentY += projectRowHeight;
 
             // Tracer une flèche entre la date initiale et la date révisée du même milestone
             project.milestones.forEach((milestone, idx) => {
                 // Vérifier si le milestone a une date révisée
                 if (milestone.revisedDate) {
                     const x1 = xScale(milestone.initialDate);
-                    const y1 = currentY + idx * rowHeight + rowHeight / 2;
+                    const y1 = currentY + idx * milestoneRowHeight + milestoneRowHeight / 2;
                     const x2 = xScale(milestone.revisedDate);
-                    const y2 = currentY + idx * rowHeight + rowHeight / 2; // Même ligne
+                    const y2 = currentY + idx * milestoneRowHeight + milestoneRowHeight / 2; // Même ligne
 
                     // Créer une ligne horizontale avec flèche
                     const pathData = `M ${x1},${y1} L ${x2},${y2}`;
@@ -591,7 +607,7 @@ export class Visual implements IVisual {
                 }
             });
 
-            currentY += project.milestones.length * rowHeight;
+            currentY += project.milestones.length * milestoneRowHeight;
         });
     }
 

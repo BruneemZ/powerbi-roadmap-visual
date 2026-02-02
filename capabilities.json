@@ -143,8 +143,14 @@
             "numeric": true
           }
         },
-        "rowHeight": {
-          "displayName": "Hauteur des lignes",
+        "projectRowHeight": {
+          "displayName": "Hauteur ligne projet",
+          "type": {
+            "numeric": true
+          }
+        },
+        "milestoneRowHeight": {
+          "displayName": "Hauteur ligne milestone",
           "type": {
             "numeric": true
           }
@@ -187,6 +193,24 @@
         },
         "milestoneFontSize": {
           "displayName": "Taille police milestone",
+          "type": {
+            "numeric": true
+          }
+        },
+        "dateLabelFontSize": {
+          "displayName": "Taille police dates",
+          "type": {
+            "numeric": true
+          }
+        },
+        "yearFontSize": {
+          "displayName": "Taille police année",
+          "type": {
+            "numeric": true
+          }
+        },
+        "quarterFontSize": {
+          "displayName": "Taille police trimestre",
           "type": {
             "numeric": true
           }

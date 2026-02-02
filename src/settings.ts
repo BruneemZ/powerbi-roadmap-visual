@@ -65,9 +65,25 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
         }
     });
 
-    rowHeight = new formattingSettings.NumUpDown({
-        name: "rowHeight",
-        displayName: "Hauteur des lignes",
+    projectRowHeight = new formattingSettings.NumUpDown({
+        name: "projectRowHeight",
+        displayName: "Hauteur ligne projet",
+        value: 40,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 30,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 100,
+            }
+        }
+    });
+
+    milestoneRowHeight = new formattingSettings.NumUpDown({
+        name: "milestoneRowHeight",
+        displayName: "Hauteur ligne milestone",
         value: 40,
         options: {
             minValue: {
@@ -131,6 +147,54 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
         }
     });
 
+    dateLabelFontSize = new formattingSettings.NumUpDown({
+        name: "dateLabelFontSize",
+        displayName: "Taille police dates",
+        value: 9,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 7,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 14,
+            }
+        }
+    });
+
+    yearFontSize = new formattingSettings.NumUpDown({
+        name: "yearFontSize",
+        displayName: "Taille police année",
+        value: 14,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 10,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 20,
+            }
+        }
+    });
+
+    quarterFontSize = new formattingSettings.NumUpDown({
+        name: "quarterFontSize",
+        displayName: "Taille police trimestre",
+        value: 12,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 8,
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 18,
+            }
+        }
+    });
+
     name: string = "milestoneSettings";
     displayName: string = "Paramètres Milestones";
     slices: Array<FormattingSettingsSlice> = [
@@ -140,12 +204,16 @@ class MilestoneSettingsCard extends FormattingSettingsCard {
         this.greenColor,
         this.showConnectingLines,
         this.quarterHeaderHeight,
-        this.rowHeight,
+        this.projectRowHeight,
+        this.milestoneRowHeight,
         this.projectBackgroundColor,
         this.milestoneBackgroundColor1,
         this.milestoneBackgroundColor2,
         this.projectFontSize,
-        this.milestoneFontSize
+        this.milestoneFontSize,
+        this.dateLabelFontSize,
+        this.yearFontSize,
+        this.quarterFontSize
     ];
 }
 
