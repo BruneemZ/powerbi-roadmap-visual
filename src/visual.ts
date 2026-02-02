@@ -205,13 +205,13 @@ export class Visual implements IVisual {
         maxWidth: number,
         fontSize: number,
         fill: string,
-        fontWeight: string = "normal"
+        fontWeight: string = "normal",
+        textAnchor: string = "end"
     ): void {
         const words = text.split(/\s+/);
         let line: string[] = [];
         let lineNumber = 0;
         const lineHeight = fontSize * 1.2;
-        const textAnchor = "end";
 
         const textElement = container.append("text")
             .attr("x", x)
@@ -310,8 +310,14 @@ export class Visual implements IVisual {
         // Grouper les milestones par projet
         const projectGroups = this.groupMilestonesByProject(this.dataPoints);
 
-        // Rendu des en-têtes trimestres
-        this.renderQuarterHeaders(this.container, xScale, quarterHeaderHeight, innerWidth, innerHeight);
+        // Calculer la hauteur totale du contenu (projets + milestones)
+        const contentHeight = projectGroups.reduce((total, project) => {
+            return total + projectRowHeight + (project.milestones.length * milestoneRowHeight);
+        }, 0);
+
+        // Rendu des en-têtes trimestres (utiliser le max entre innerHeight et contentHeight)
+        const maxHeight = Math.max(innerHeight, contentHeight);
+        this.renderQuarterHeaders(this.container, xScale, quarterHeaderHeight, innerWidth, maxHeight);
 
         // Rendu des milestones
         this.renderMilestones(this.container, projectGroups, xScale, projectRowHeight, milestoneRowHeight, triangleSize, innerWidth);
@@ -454,16 +460,17 @@ export class Visual implements IVisual {
                 .attr("stroke", "#ccc");
 
             // Nom du projet avec retour à la ligne automatique
-            const projectText = `${project.projectId} - ${project.projectName}  (${project.projectInfo})`;
+            const projectText = `${project.projectId} ${project.projectName} ${project.projectInfo}`;
             this.wrapText(
                 projectHeaderGroup,
                 projectText,
-                -10,
+                -240,
                 projectRowHeight / 2,
                 textMaxWidth,
                 this.formattingSettings.milestoneSettings.projectFontSize.value,
                 "#333",
-                "bold"
+                "bold",
+                "start"
             );
 
             currentY += projectRowHeight; // Incrémenter pour l'en-tête du projet
