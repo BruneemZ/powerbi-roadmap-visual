@@ -28,8 +28,13 @@ export interface ProjectGroup {
 
 export class Visual implements IVisual {
     private target: HTMLElement;
-    private svg: d3.Selection<SVGElement, any, any, any>;
-    private container: d3.Selection<SVGGElement, any, any, any>;
+    private mainContainer: HTMLElement;
+    private headerContainer: HTMLElement;
+    private scrollContainer: HTMLElement;
+    private headerSvg: d3.Selection<SVGElement, any, any, any>;
+    private contentSvg: d3.Selection<SVGElement, any, any, any>;
+    private headerGroup: d3.Selection<SVGGElement, any, any, any>;
+    private contentGroup: d3.Selection<SVGGElement, any, any, any>;
     private formattingSettings: VisualFormattingSettingsModel;
     private formattingSettingsService: FormattingSettingsService;
     private dataPoints: MilestoneDataPoint[];
@@ -38,14 +43,47 @@ export class Visual implements IVisual {
         this.formattingSettingsService = new FormattingSettingsService();
         this.target = options.element;
 
-        // Créer l'élément SVG principal
-        this.svg = d3.select(this.target)
-            .append("svg")
-            .classed("roadmap-svg", true);
+        // Créer la structure HTML pour le scroll avec entêtes figées
+        this.mainContainer = document.createElement("div");
+        this.mainContainer.className = "roadmap-main-container";
+        this.mainContainer.style.cssText = "display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden;";
 
-        this.container = this.svg
+        // Conteneur pour les entêtes (fixe)
+        this.headerContainer = document.createElement("div");
+        this.headerContainer.className = "roadmap-header-container";
+        this.headerContainer.style.cssText = "flex-shrink: 0; overflow: hidden;";
+
+        // Conteneur scrollable pour le contenu
+        this.scrollContainer = document.createElement("div");
+        this.scrollContainer.className = "roadmap-scroll-container";
+        this.scrollContainer.style.cssText = "flex: 1; overflow-y: auto; overflow-x: hidden;";
+
+        this.mainContainer.appendChild(this.headerContainer);
+        this.mainContainer.appendChild(this.scrollContainer);
+        this.target.appendChild(this.mainContainer);
+
+        // SVG pour les entêtes
+        this.headerSvg = d3.select(this.headerContainer)
+            .append("svg")
+            .classed("roadmap-header-svg", true);
+
+        this.headerGroup = this.headerSvg
             .append("g")
-            .classed("roadmap-container", true);
+            .classed("roadmap-header-group", true);
+
+        // SVG pour le contenu scrollable
+        this.contentSvg = d3.select(this.scrollContainer)
+            .append("svg")
+            .classed("roadmap-content-svg", true);
+
+        this.contentGroup = this.contentSvg
+            .append("g")
+            .classed("roadmap-content-group", true);
+
+        // Synchroniser le scroll horizontal entre header et content
+        this.scrollContainer.addEventListener("scroll", () => {
+            this.headerContainer.scrollLeft = this.scrollContainer.scrollLeft;
+        });
     }
 
     public update(options: VisualUpdateOptions): void {
@@ -58,9 +96,9 @@ export class Visual implements IVisual {
         const width = options.viewport.width;
         const height = options.viewport.height;
 
-        this.svg
-            .attr("width", width)
-            .attr("height", height);
+        // Mettre à jour les dimensions du conteneur principal
+        this.mainContainer.style.width = width + "px";
+        this.mainContainer.style.height = height + "px";
 
         // Traiter les données
         this.dataPoints = this.transformData(options.dataViews[0]);
@@ -256,9 +294,8 @@ export class Visual implements IVisual {
     }
 
     private renderRoadmap(width: number, height: number): void {
-        const margin = { top: 80, right: 40, bottom: 30, left: 250 };
+        const margin = { top: 10, right: 40, bottom: 10, left: 250 };
         const innerWidth = width - margin.left - margin.right;
-        const innerHeight = height - margin.top - margin.bottom;
 
         const triangleSize = this.formattingSettings.milestoneSettings.triangleSize.value;
         const quarterHeaderHeight = this.formattingSettings.milestoneSettings.quarterHeaderHeight.value;
@@ -301,12 +338,6 @@ export class Visual implements IVisual {
             .domain([startDate, endDate])
             .range([0, innerWidth]);
 
-        // Nettoyer le conteneur
-        this.container.selectAll("*").remove();
-
-        // Positionner le conteneur
-        this.container.attr("transform", `translate(${margin.left}, ${margin.top})`);
-
         // Grouper les milestones par projet
         const projectGroups = this.groupMilestonesByProject(this.dataPoints);
 
@@ -315,23 +346,47 @@ export class Visual implements IVisual {
             return total + projectRowHeight + (project.milestones.length * milestoneRowHeight);
         }, 0);
 
-        // Rendu des en-têtes trimestres (utiliser le max entre innerHeight et contentHeight)
-        const maxHeight = Math.max(innerHeight, contentHeight);
-        this.renderQuarterHeaders(this.container, xScale, quarterHeaderHeight, innerWidth, maxHeight);
+        // Hauteur de l'entête (années + trimestres)
+        const headerHeight = quarterHeaderHeight + margin.top;
 
-        // Rendu des milestones
-        this.renderMilestones(this.container, projectGroups, xScale, projectRowHeight, milestoneRowHeight, triangleSize, innerWidth);
+        // Configurer le SVG des entêtes
+        this.headerSvg
+            .attr("width", width)
+            .attr("height", headerHeight);
+
+        // Nettoyer et positionner le groupe d'entêtes
+        this.headerGroup.selectAll("*").remove();
+        this.headerGroup.attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        // Configurer le SVG du contenu
+        const totalContentHeight = contentHeight + margin.bottom;
+        this.contentSvg
+            .attr("width", width)
+            .attr("height", totalContentHeight);
+
+        // Nettoyer et positionner le groupe de contenu
+        this.contentGroup.selectAll("*").remove();
+        this.contentGroup.attr("transform", `translate(${margin.left}, 0)`);
+
+        // Rendu des en-têtes trimestres (dans le headerGroup)
+        this.renderQuarterHeaders(this.headerGroup, xScale, quarterHeaderHeight, innerWidth, contentHeight);
+
+        // Rendu des séparateurs d'années dans le contenu (lignes verticales)
+        this.renderYearSeparators(this.contentGroup, xScale, quarterHeaderHeight, contentHeight);
+
+        // Rendu des milestones (dans le contentGroup)
+        this.renderMilestones(this.contentGroup, projectGroups, xScale, projectRowHeight, milestoneRowHeight, triangleSize, innerWidth);
 
         // Rendu des lignes de connexion
-        this.renderConnectingLines(this.container, projectGroups, xScale, projectRowHeight, milestoneRowHeight);
+        this.renderConnectingLines(this.contentGroup, projectGroups, xScale, projectRowHeight, milestoneRowHeight);
     }
 
     private renderQuarterHeaders(
         container: d3.Selection<SVGGElement, any, any, any>,
         xScale: d3.ScaleTime<number, number>,
         headerHeight: number,
-        innerWidth: number,
-        innerHeight: number
+        _innerWidth: number,
+        _innerHeight: number
     ): void {
         const [startDate, endDate] = xScale.domain();
 
@@ -356,13 +411,12 @@ export class Visual implements IVisual {
             current = new Date(year, quarter * 3, 1); // Prochain trimestre
         }
 
-        // Créer le groupe d'en-têtes
-        const headerGroup = container.append("g")
-            .attr("class", "quarter-headers")
-            .attr("transform", `translate(0, ${-headerHeight - 10})`);
+        // Créer le groupe d'en-têtes (positionné à partir de 0)
+        const headersGroup = container.append("g")
+            .attr("class", "quarter-headers");
 
         // En-têtes des années (ligne du haut)
-        const yearGroup = headerGroup.append("g").attr("class", "year-headers");
+        const yearGroup = headersGroup.append("g").attr("class", "year-headers");
         const years = [...new Set(quarters.map(q => q.year))];
 
         years.forEach(year => {
@@ -390,7 +444,7 @@ export class Visual implements IVisual {
         });
 
         // En-têtes des trimestres (ligne du bas)
-        const quarterGroup = headerGroup.append("g")
+        const quarterGroup = headersGroup.append("g")
             .attr("class", "quarter-rows")
             .attr("transform", `translate(0, ${headerHeight / 2})`);
 
@@ -415,21 +469,39 @@ export class Visual implements IVisual {
                 .attr("font-size", quarterFontSize + "px")
                 .text(`Q${q.quarter}`);
         });
+    }
 
-        // Lignes verticales de séparation (seulement entre les années, pas entre trimestres)
-        quarters.forEach((q, idx) => {
-            // Dessiner une ligne seulement si c'est le premier trimestre d'une année (Q1) et pas le premier trimestre global
-            if (q.quarter === 1 && idx > 0) {
+    private renderYearSeparators(
+        container: d3.Selection<SVGGElement, any, any, any>,
+        xScale: d3.ScaleTime<number, number>,
+        _headerHeight: number,
+        contentHeight: number
+    ): void {
+        const [startDate, endDate] = xScale.domain();
+
+        // Générer les trimestres pour trouver les débuts d'années
+        let current = new Date(startDate);
+
+        while (current <= endDate) {
+            const year = current.getFullYear();
+            const quarter = Math.floor(current.getMonth() / 3) + 1;
+
+            // Dessiner une ligne seulement si c'est le premier trimestre d'une année (Q1)
+            // et pas au tout début de la timeline
+            if (quarter === 1 && current > startDate) {
+                const qStart = new Date(year, 0, 1);
                 container.append("line")
                     .attr("class", "year-separator")
-                    .attr("x1", xScale(q.startDate))
-                    .attr("x2", xScale(q.startDate))
-                    .attr("y1", -headerHeight - 10)
-                    .attr("y2", innerHeight)
+                    .attr("x1", xScale(qStart))
+                    .attr("x2", xScale(qStart))
+                    .attr("y1", 0)
+                    .attr("y2", contentHeight)
                     .attr("stroke", "#999")
                     .attr("stroke-width", 2);
             }
-        });
+
+            current = new Date(year, quarter * 3, 1); // Prochain trimestre
+        }
     }
 
     private renderMilestones(
@@ -619,9 +691,14 @@ export class Visual implements IVisual {
     }
 
     private renderEmptyState(width: number, height: number): void {
-        this.container.selectAll("*").remove();
+        this.headerGroup.selectAll("*").remove();
+        this.contentGroup.selectAll("*").remove();
 
-        this.container.append("text")
+        this.contentSvg
+            .attr("width", width)
+            .attr("height", height);
+
+        this.contentGroup.append("text")
             .attr("x", width / 2)
             .attr("y", height / 2)
             .attr("text-anchor", "middle")
